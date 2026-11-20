@@ -272,6 +272,28 @@ def project_mcp(path):
         return {}
 
 
+def _guard_secret_file(root, f):
+    """A server with env/headers (secrets) is about to be written into <project>/.mcp.json.
+    Refuse if git tracks that file (it would leak on push); otherwise keep it out of git locally."""
+    def git(*args):
+        return subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, timeout=15)
+    try:
+        if git("rev-parse", "--is-inside-work-tree").stdout.strip() != "true":
+            return
+    except (OSError, subprocess.TimeoutExpired):
+        return
+    if git("ls-files", "--error-unmatch", ".mcp.json").returncode == 0:
+        raise ValueError(".mcp.json is tracked by git: a server with secrets would be committed. "
+                         "Pin it globally instead, or untrack .mcp.json first.")
+    ex = git("rev-parse", "--git-path", "info/exclude").stdout.strip()
+    if ex:
+        ex = Path(ex) if os.path.isabs(ex) else root / ex
+        ex.parent.mkdir(parents=True, exist_ok=True)
+        cur = ex.read_text() if ex.exists() else ""
+        if ".mcp.json" not in cur.split():
+            ex.write_text(cur + ("" if cur.endswith("\n") or not cur else "\n") + ".mcp.json\n")
+
+
 def mcp_op(name, scope, action, journal=True):
     lib = mcp_lib()
     if name not in lib or not NAME_RE.match(name):
@@ -297,13 +319,18 @@ def mcp_op(name, scope, action, journal=True):
             doc = {}
         servers = doc.setdefault("mcpServers", {})
         if action == "pin":
+            if lib[name].get("env") or lib[name].get("headers"):
+                _guard_secret_file(root, f)       # raises if the file is tracked by git
             servers[name] = lib[name]
         elif action == "unpin":
             servers.pop(name, None)
         else:
             raise ValueError("bad action")
-        f.write_text(json.dumps(doc, indent=2) + "\n")
-        os.chmod(f, 0o600)
+        tmp = f.with_name(f.name + ".tmp")        # created 0600 from the start, never world-readable
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as fh:
+            fh.write(json.dumps(doc, indent=2) + "\n")
+        os.replace(tmp, f)
     if journal:
         log({"kind": "mcp", "name": name, "scope": scope, "action": action})
 

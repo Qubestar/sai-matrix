@@ -20,7 +20,7 @@ Safety:
   - Settings are backed up once to <file>.tokentrim-bak before the first write.
   - project scope -> ./.claude/settings.local.json ; global -> ~/.claude/settings.json
 """
-import argparse, json, os, shutil, sys, time
+import argparse, hashlib, json, os, re, shutil, sys, time
 from pathlib import Path
 
 CORE = {
@@ -153,8 +153,36 @@ def settings_path(scope, project=None):
     return claude_dir() / "settings.json"
 
 
+# The record of what WE blocked lives in Sai Matrix's own data dir, never inside a project:
+# a repository could otherwise ship a forged record and make `restore` strip deny rules.
+DATA = Path(os.environ.get("SAI_MATRIX_DATA") or Path(__file__).resolve().parent / ".data")
+TOOL_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+SKILL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
+
+
 def record_path(sp):
-    return sp.parent / RECORD
+    key = hashlib.sha1(str(Path(sp).resolve()).encode()).hexdigest()[:16]
+    return DATA / "trim-records" / f"{key}.json"
+
+
+def load_record(sp):
+    rp = record_path(sp)
+    rec = load_json(rp, None)
+    if rec is None:
+        rec = {"tools": [], "skills": []}
+        old = Path(sp).parent / RECORD            # legacy location: trusted only for the user-level file
+        if Path(sp) == claude_dir() / "settings.json" and old.is_file():
+            rec = load_json(old, rec)
+            save_record(sp, rec)
+            old.unlink(missing_ok=True)
+    return {"tools": [t for t in rec.get("tools", []) if isinstance(t, str) and TOOL_RE.match(t)],
+            "skills": [x for x in rec.get("skills", []) if isinstance(x, str) and SKILL_RE.match(x)]}
+
+
+def save_record(sp, rec):
+    rp = record_path(sp)
+    rp.parent.mkdir(parents=True, exist_ok=True)
+    rp.write_text(json.dumps(rec, indent=2) + "\n")
 
 
 def load_json(p, default):
@@ -193,17 +221,16 @@ def api_trim(project, days=30, keep=(), apply=False, tools_only=False, plan=None
         if new_skills:
             data["skillOverrides"] = {**over, **{n: "name-only" for n in new_skills}}
         save_settings(sp, data)
-        rp = record_path(sp)
-        rec = load_json(rp, {"tools": [], "skills": []})
+        rec = load_record(sp)
         rec["tools"] = sorted(set(rec["tools"]) | set(new_tools))
         rec["skills"] = sorted(set(rec["skills"]) | set(new_skills))
-        rp.write_text(json.dumps(rec, indent=2) + "\n")
+        save_record(sp, rec)
     return {"file": str(sp), "tools": new_tools, "skills": new_skills, "applied": bool(apply)}
 
 
 def api_restore(project, apply=False):
     sp = settings_path("project" if project else "global", project)
-    rec = load_json(record_path(sp), {"tools": [], "skills": []})
+    rec = load_record(sp)
     data = load_json(sp, {})
     deny = (data.get("permissions") or {}).get("deny", [])
     over = data.get("skillOverrides") or {}
@@ -228,7 +255,7 @@ def api_restore(project, apply=False):
 def current_state(project):
     """What this scope already trimmed (from the record file)."""
     sp = settings_path("project" if project else "global", project)
-    return load_json(record_path(sp), {"tools": [], "skills": []})
+    return load_record(sp)
 
 
 def cmd_report(a):
@@ -271,18 +298,17 @@ def cmd_trim(a):
     if new_skills:
         data["skillOverrides"] = {**over, **{n: "name-only" for n in new_skills}}
     save_settings(sp, data)
-    rp = record_path(sp)
-    rec = load_json(rp, {"tools": [], "skills": []})
+    rec = load_record(sp)
     rec["tools"] = sorted(set(rec["tools"]) | set(new_tools))
     rec["skills"] = sorted(set(rec["skills"]) | set(new_skills))
-    rp.write_text(json.dumps(rec, indent=2) + "\n")
+    save_record(sp, rec)
     print(f"Applied. Undo: token_trim.py restore --scope {a.scope} --apply")
 
 
 def cmd_restore(a):
     sp = settings_path(a.scope)
     rp = record_path(sp)
-    rec = load_json(rp, {"tools": [], "skills": []})
+    rec = load_record(sp)
     data = load_json(sp, {})
     deny = (data.get("permissions") or {}).get("deny", [])
     over = data.get("skillOverrides") or {}

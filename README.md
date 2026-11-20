@@ -72,6 +72,8 @@ The UI language (English, Polski, Español) is chosen with the selector in the t
 
 - Binds to `127.0.0.1` only; requests with a foreign `Host` header are rejected, and all writes need a custom header.
 - MCP secrets stay on disk (`0600`) and never reach the browser.
+- Pinning an MCP server that has `env`/`headers` into a project writes it to `<project>/.mcp.json` (created `0600`). If git tracks that file, Sai Matrix refuses; otherwise it adds `.mcp.json` to the repo's local `.git/info/exclude`. For secrets, prefer pinning globally.
+- The record of what the Tokens tab blocked is stored in `.data/`, never inside a project.
 - No network calls, no analytics.
 - Local state (`.data/`, `config.json`) is git-ignored.
 
