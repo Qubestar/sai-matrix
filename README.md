@@ -6,7 +6,7 @@ Every skill you install and every MCP server you configure costs tokens on every
 
 Pure Python standard library. No dependencies, no build step, no telemetry. Everything runs on `127.0.0.1`.
 
-![Sai Matrix, skills matrix](docs/screenshot.png)
+![Sai Matrix, skills matrix](docs/screenshot-matrix.png)
 
 The Tokens tab shows which built-in tools your agent loads but never uses:
 
