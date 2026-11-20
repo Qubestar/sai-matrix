@@ -14,7 +14,7 @@ Run: python3 server.py   ->  http://127.0.0.1:8765
 
 Optional config.json next to this file: {"locked": [project paths], "hide_parts": [path fragments]}
 """
-import json, os, re, shutil, subprocess, sys, time
+import json, os, re, shutil, subprocess, sys, tempfile, time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
@@ -313,6 +313,8 @@ def mcp_op(name, scope, action, journal=True):
     else:
         root = project_ok(scope)
         f = root / ".mcp.json"
+        if f.is_symlink():
+            raise ValueError(".mcp.json is a symlink; refusing to write through it")
         try:
             doc = json.loads(f.read_text())
         except (OSError, ValueError):
@@ -326,11 +328,18 @@ def mcp_op(name, scope, action, journal=True):
             servers.pop(name, None)
         else:
             raise ValueError("bad action")
-        tmp = f.with_name(f.name + ".tmp")        # created 0600 from the start, never world-readable
-        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w") as fh:
-            fh.write(json.dumps(doc, indent=2) + "\n")
-        os.replace(tmp, f)
+        # mkstemp = O_EXCL + 0600 + unpredictable name: a planted symlink/tmp file in the repo cannot redirect the write
+        fd, tmp = tempfile.mkstemp(dir=root, prefix=".mcp.json.")
+        try:
+            with os.fdopen(fd, "w") as fh:
+                fh.write(json.dumps(doc, indent=2) + "\n")
+            os.replace(tmp, f)
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
     if journal:
         log({"kind": "mcp", "name": name, "scope": scope, "action": action})
 
