@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sai Matrix</title>
+<style>
+:root{--bg:#f6f5f2;--panel:#fff;--ink:#1d1d1f;--mute:#6b6b70;--line:#e3e1db;--acc:#2d5bff;--accbg:#e8eeff;--g:#1f8a4c;--gbg:#e3f4ea;--warn:#6d3fc7;--warnbg:#efe8fb;--onacc:#fff;--r:10px;color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#16161a;--panel:#1f1f25;--ink:#ececf0;--mute:#9a9aa3;--line:#33333c;--acc:#7b9bff;--accbg:#262d4d;--g:#52c283;--gbg:#1b3327;--warn:#b69cff;--warnbg:#2e2547;--onacc:#0b1020;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#16161a;--panel:#1f1f25;--ink:#ececf0;--mute:#9a9aa3;--line:#33333c;--acc:#7b9bff;--accbg:#262d4d;--g:#52c283;--gbg:#1b3327;--warn:#b69cff;--warnbg:#2e2547;--onacc:#0b1020;color-scheme:dark}
+:root[data-theme=light]{color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:5;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font-size:16px;margin:0 8px 0 0}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--ink);padding:6px 12px;cursor:pointer;font:inherit}
+.seg button.on{background:var(--acc);color:var(--onacc)}
+input[type=search]{flex:1;min-width:160px;max-width:320px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer;font:inherit}
+.btn:disabled{opacity:.4;cursor:default}
+.stat{color:var(--mute);margin-left:auto;font-size:12px}
+main{padding:16px}
+#legend{display:flex;gap:6px 16px;flex-wrap:wrap;align-items:center;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);font-size:12px;color:var(--mute)}
+#legend b{color:var(--ink);font-weight:600}
+#legend .chip{font-size:11px;padding:1px 8px}
+#legend .sq{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.board{display:grid;grid-template-columns:minmax(300px,1fr) minmax(300px,420px);gap:16px;align-items:start}
+@media(max-width:800px){.board{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.card.drop{outline:2px dashed var(--acc);background:var(--accbg)}
+.card.locked{opacity:.65}
+.card h3{margin:0;font-size:14px;display:flex;gap:6px;align-items:center}
+.card small{color:var(--mute);display:block;word-break:break-all;font-size:11px}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;background:var(--accbg);color:var(--ink);font-size:12px;border:1px solid transparent}
+.chip.g{background:var(--gbg)}
+.chip.local{background:var(--warnbg);color:var(--warn)}
+.chip button{border:0;background:none;color:var(--mute);cursor:pointer;padding:0 0 0 2px;font-size:14px;line-height:1}
+.chip button:hover{color:#d33}
+.empty{color:var(--mute);font-size:12px;margin-top:8px}
+.lib{position:sticky;top:64px;max-height:calc(100vh - 84px);overflow:auto}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.filters button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:99px;padding:3px 10px;cursor:pointer;font:inherit;font-size:12px}
+.filters button.on{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
+.item{display:flex;gap:8px;align-items:flex-start;padding:7px 8px;border-radius:8px;cursor:grab;border:1px solid transparent}
+.item:hover{background:var(--bg);border-color:var(--line)}
+.item.sel{background:var(--accbg);border-color:var(--acc)}
+.item .n{font-weight:600}
+.item .d{color:var(--mute);font-size:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.badge{font-size:10px;padding:1px 6px;border-radius:99px;background:var(--accbg);margin-left:4px;font-weight:600}
+.badge.g{background:var(--gbg);color:var(--g)}
+.hint{color:var(--mute);font-size:12px;margin:0 0 10px}
+.mx{overflow:auto;max-height:calc(100vh - 110px);border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
+table{border-collapse:separate;border-spacing:0;font-size:12px}
+th,td{border-bottom:1px solid var(--line);padding:0;text-align:center}
+thead th{position:sticky;top:0;background:var(--panel);z-index:2;height:130px;vertical-align:bottom;min-width:34px}
+thead th span{writing-mode:vertical-rl;transform:rotate(180deg);padding:6px 0;white-space:nowrap;display:inline-block;max-height:124px;overflow:hidden}
+th.name,td.name{position:sticky;left:0;background:var(--panel);text-align:left;padding:4px 10px;min-width:200px;max-width:260px;z-index:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+thead th.name{z-index:3;vertical-align:bottom}
+td.c button{width:34px;height:26px;border:0;background:transparent;cursor:pointer;color:var(--mute);font-size:15px}
+td.c button.on{color:var(--onacc);background:var(--acc)}
+td.c button.g{background:var(--g)}
+td.c button.loc{background:var(--warn);color:var(--onacc);cursor:default}
+td.c button:disabled:not(.loc){opacity:.25;cursor:not-allowed}
+td.c button:hover:not(:disabled):not(.on){background:var(--accbg)}
+tbody tr:hover td,tbody tr:hover td.name{background:var(--accbg)}
+td.hc,th.hc{background:var(--accbg)}
+td.hc button:not(.on):not(.loc){background:transparent}
+tbody tr:hover td.c button:not(.on):not(.loc){background:transparent}
+tr:hover td.hc{background:var(--acc);opacity:.9}
+tr:hover td.hc button:not(.on):not(.loc){color:var(--onacc)}
+thead th.hc span{font-weight:700;color:var(--acc)}
+.catH{font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--acc);margin:12px 4px 4px;padding-top:6px;border-top:1px solid var(--line)}
+.catH:first-child{border-top:0;margin-top:0}
+tr.catR td{background:var(--accbg)!important;color:var(--acc);font-weight:700;text-align:left;padding:5px 10px;font-size:12px;position:sticky;left:0}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:8px;opacity:0;pointer-events:none;transition:.2s;z-index:10;max-width:90vw}
+#toast.show{opacity:1}#toast.err{background:#b3261e}
+</style>
+</head>
+<body>
+<header>
+  <h1>Sai Matrix</h1>
+  <div class="seg" id="tabs"><button data-v="skills" class="on" data-i18n="Skills">Skills</button><button data-v="mcps">MCP</button><button data-v="tokens" data-i18n="Tokens">Tokens</button></div>
+  <div class="seg" id="views"><button data-v="board" data-i18n="Board">Board</button><button data-v="matrix" class="on" data-i18n="Matrix">Matrix</button></div>
+  <select id="ag" class="btn" data-i18n-title="Agent" title="Agent"></select>
+  <select id="so" class="btn"><option value="az" data-i18n="Sort: A–Z">Sort: A–Z</option><option value="cat" data-i18n="Sort: categories">Sort: categories</option></select>
+  <input type="search" id="q" data-i18n-ph="Search…" placeholder="Search…">
+  <button class="btn" id="theme" data-i18n-title="Theme: Auto / Light / Dark" title="Theme: Auto / Light / Dark">◐ Auto</button>
+  <button class="btn" id="undo" data-i18n="↶ Undo last change">↶ Undo last change</button>
+  <span class="stat" id="stat"></span>
+  <select id="lang" class="btn" title="Language / Język / Idioma"><option value="en">English</option><option value="pl">Polski</option><option value="es">Español</option></select>
+</header>
+<div id="legend">
+  <b data-i18n="Legend:">Legend:</b>
+  <span><span class="chip g" data-i18n="name">name</span> <b data-i18n="green">green</b> <span data-i18n="= enabled globally (the agent has it in every session)">= enabled globally (the agent has it in every session)</span></span>
+  <span><span class="chip" data-i18n="name">name</span> <b data-i18n="blue">blue</b> <span data-i18n="= enabled only in this project">= enabled only in this project</span></span>
+  <span><span class="chip local" data-i18n="name">name</span> <b data-i18n="purple">purple</b> <span data-i18n="= separate copy, not from the shared library — the panel will not disable it">= separate copy, not from the shared library — the panel will not disable it</span></span>
+  <span><span data-i18n="Matrix: ● = enabled, ○ = disabled (click to toggle) ·">Matrix: ● = enabled, ○ = disabled (click to toggle) ·</span> <span class="badge g">G</span> <span data-i18n="global">global</span> · <span class="badge">P×n</span> <span data-i18n="in n projects">in n projects</span> · <span data-i18n="🔒 production, locked">🔒 production, locked</span></span>
+</div>
+<main id="main"></main>
+<div id="toast"></div>
+<script>
+let S=null,agent='claude',tab='skills',view='matrix',filter='all',q='',sel=null,sortMode='az';
+const I18N={"pl": {"Skills": "Skille", "Tokens": "Tokeny", "Board": "Tablica", "Matrix": "Macierz", "Agent": "Agent", "Sort: A–Z": "Sortuj: A–Z", "Sort: categories": "Sortuj: kategorie", "Search…": "Szukaj…", "Theme: Auto / Light / Dark": "Motyw: Auto / Jasny / Ciemny", "↶ Undo last change": "↶ Cofnij ostatnią zmianę", "Legend:": "Legenda:", "name": "nazwa", "green": "zielony", "blue": "niebieski", "purple": "fioletowy", "= enabled globally (the agent has it in every session)": "= włączony globalnie (agent ma go w każdej sesji)", "= enabled only in this project": "= włączony tylko w tym projekcie", "= separate copy, not from the shared library — the panel will not disable it": "= osobna kopia, nie ze wspólnej biblioteki — panel jej nie wyłączy", "Matrix: ● = enabled, ○ = disabled (click to toggle) ·": "Macierz: ● = włączony, ○ = wyłączony (kliknij, żeby zmienić) ·", "global": "globalny", "in n projects": "w n projektach", "🔒 production, locked": "🔒 produkcja, zablokowany", "This agent is view-only (writing to its format is not supported yet)": "Ten agent jest tylko do podglądu (zapis w jego formacie nie jest jeszcze obsługiwany)", "This agent is view-only": "Ten agent jest tylko do podglądu", "Pinned {n}": "Przypięto {n}", "Unpinned {n}": "Odpięto {n}", "Pinned {n} items": "Przypięto {n} pozycji", "Unpinned {n} items": "Odpięto {n} pozycji", "(applies from the next session)": "(zadziała od nowej sesji)", "(errors: {n})": "(błędy: {n})", "Global (every session)": "Globalnie (każda sesja)", "(MCP: view-only)": "(MCP: podgląd)", "skills": "skilli", "{n} {kind} · {g} global · {l} loaded only where pinned": "{n} {kind} · {g} globalnych · {l} ładowanych tylko tam, gdzie przypięte", "All": "Wszystkie", "Not global": "Nie globalne", "Nowhere": "Nigdzie", "Global": "Globalne", "In projects": "W projektach", "Drag onto a project, or click an item and then \"Pin\" on the project card. List: {n}": "Przeciągnij na projekt albo kliknij pozycję, potem „Przypnij” na karcie projektu. Lista: {n}", "No results": "Brak wyników", "Pin": "Przypnij", "Local folder - not touched": "Lokalny folder – nie ruszam", "Unpin": "Odepnij", "nothing pinned": "nic nie przypięte", "{n} items": "{n} pozycji", "Undone: {n}": "Cofnięto: {n}", "Auto": "Auto", "Light": "Jasny", "Dark": "Ciemny", "Documents": "Dokumenty", "Automation (n8n)": "Automatyzacje (n8n)", "Video & media": "Wideo i media", "Marketing & SEO": "Marketing i SEO", "Design & UI": "Design i UI", "Development": "Development", "Agents & tools": "Agenci i narzędzia", "Web & scraping": "Web i scraping", "Memory & agents": "Pamięć i agenci", "Other": "Inne", "Scanning…": "Skanuję…", "Manual exclusion of Gemini CLI tools (tools.exclude in {file}). Gemini keeps no tool-usage history, so nothing is suggested automatically. Tick what to exclude; takes effect after restarting Gemini.": "Ręczne wyłączanie narzędzi Gemini CLI (tools.exclude w {file}). Gemini nie zapisuje użycia narzędzi, więc nic nie jest sugerowane automatycznie. Zaznacz, co wyłączyć; zadziała po restarcie Gemini.", "(core)": "(podstawowe)", "Apply changes": "Zastosuj zmiany", "Refresh": "Odśwież", "No changes.": "Brak zmian.", "You are excluding a core tool (files/shell). Gemini may stop working properly. Continue?": "Wyłączasz narzędzie podstawowe (pliki/powłoka). Gemini może przestać działać sensownie. Kontynuować?", "APPLIED. Excluded: {a} · Re-enabled: {b}": "ZASTOSOWANO. Wyłączono: {a} · Włączono z powrotem: {b}", "Takes effect after restarting Gemini CLI.": "Zadziała po restarcie Gemini CLI.", "Done": "Gotowe", "Last {d} days: {s} sessions. A toolset is a group of tools (blocked via hermes tools disable, platform cli). Possible saving: ~{n} tokens per request (size estimated: characters/4).": "Ostatnie {d} dni: {s} sesji. Toolset to grupa narzędzi (blokada przez hermes tools disable, platforma cli). Możliwa oszczędność: ~{n} tokenów na zapytanie (rozmiar szacowany: znaki/4).", "Already saved by blocking: ~{n} tokens.": "Już zaoszczędzone dzięki blokadzie: ~{n} tokenów.", "tok": "tok", "{n} calls": "{n} wywołań", "blocked by us": "zablokowane przez nas", "(from the next session)": "(od nowej sesji)", "to block": "do zablokowania", "used/core/no data": "używane/rdzeń/bez danych", "used/core": "używane/rdzeń", "Preview": "Podgląd", "Block {n} unused": "Zablokuj {n} nieużywanych", "Restore": "Przywróć", "Refresh scan": "Odśwież skan", "APPLIED": "ZASTOSOWANO", "PREVIEW": "PODGLĄD", "(none)": "(nic)", "Skipped": "Pominięto", "Takes effect from the next Hermes session.": "Zadziała od nowej sesji Hermesa.", "Disable these toolsets in Hermes (hermes tools disable)? You can undo with Restore.": "Wyłączyć te toolsety w Hermesie (hermes tools disable)? Cofniesz przyciskiem Przywróć.", "Built-in tools sent on every request (schemas) – blocking = deny in .claude/settings.local.json": "Narzędzia wbudowane wysyłane w każdym zapytaniu (schematy) – blokada = deny w .claude/settings.local.json", "Scanning transcripts (a few seconds)…": "Skanuję transkrypty (kilka sekund)…", "blocked": "zablokowane", "Last 30 days: {s} sessions, {r} requests. Possible saving from tools: ~{n} tokens per request. Pin skills in the Skills tab (more effective than name-only).": "Ostatnie 30 dni: {s} sesji, {r} zapytań. Możliwa oszczędność z narzędzi: ~{n} tokenów na zapytanie. Skille przypinasz w zakładce Skille (to skuteczniejsze niż name-only).", "Scope": "Zakres", "(locked)": "(zablokowany)", "(nothing to change)": "(nic do zmiany)", "Takes effect from the next session.": "Zadziała od nowej sesji.", "Done – from the next session": "Gotowe – od nowej sesji", "Write deny to the settings of the chosen scope? You can undo with Restore.": "Zapisać deny do ustawień wybranego zakresu? Można cofnąć przyciskiem Przywróć.", "Codex has no safe per-tool switch for built-in tools: its logs only expose tool namespaces (functions, clock, collaboration, MCP) and its options are broad feature flags. Manage Codex MCP servers in the MCP tab.": "Codex nie ma bezpiecznego odpowiednika blokady pojedynczych narzędzi wbudowanych: logi zawierają tylko zbiorcze przestrzenie nazw (functions, clock, collaboration, MCP), a opcje to ogólne feature flagi. MCP-ami Codexa zarządzasz w zakładce MCP.", "Hermes venv not found": "Nie znaleziono venv Hermesa", "reading files (core)": "czytanie plików (podstawowe)", "writing files (core)": "zapis plików (podstawowe)", "editing files (core)": "edycja plików (podstawowe)", "running commands (core)": "uruchamianie poleceń (podstawowe)", "find files by pattern": "szukanie plików po wzorcu", "search file contents": "przeszukiwanie treści plików", "list a folder": "lista folderu", "read several files at once": "czytanie wielu plików naraz", "Google web search": "wyszukiwarka Google", "fetch a URL": "pobieranie adresu URL", "task list": "lista zadań", "load a skill": "ładowanie skilla", "ask you questions": "pytania do Ciebie", "sub-agents": "pod-agenci", "plan mode": "tryb planowania", "task completion": "kończenie zadań", "topic updates": "aktualizacje tematu", "Gemini CLI docs": "dokumentacja Gemini CLI", "browser snapshot": "zrzut przeglądarki", "MCP resources": "zasoby MCP", "task tracker": "tracker zadań", "custom": "własne"}, "es": {"Skills": "Skills", "Tokens": "Tokens", "Board": "Tablero", "Matrix": "Matriz", "Agent": "Agente", "Sort: A–Z": "Ordenar: A–Z", "Sort: categories": "Ordenar: categorías", "Search…": "Buscar…", "Theme: Auto / Light / Dark": "Tema: Auto / Claro / Oscuro", "↶ Undo last change": "↶ Deshacer último cambio", "Legend:": "Leyenda:", "name": "nombre", "green": "verde", "blue": "azul", "purple": "morado", "= enabled globally (the agent has it in every session)": "= activado globalmente (el agente lo tiene en cada sesión)", "= enabled only in this project": "= activado solo en este proyecto", "= separate copy, not from the shared library — the panel will not disable it": "= copia independiente, no de la biblioteca compartida: el panel no la desactivará", "Matrix: ● = enabled, ○ = disabled (click to toggle) ·": "Matriz: ● = activado, ○ = desactivado (clic para cambiar) ·", "global": "global", "in n projects": "en n proyectos", "🔒 production, locked": "🔒 producción, bloqueado", "This agent is view-only (writing to its format is not supported yet)": "Este agente es solo de lectura (aún no se admite escribir en su formato)", "This agent is view-only": "Este agente es solo de lectura", "Pinned {n}": "Fijado {n}", "Unpinned {n}": "Desfijado {n}", "Pinned {n} items": "Fijados {n} elementos", "Unpinned {n} items": "Desfijados {n} elementos", "(applies from the next session)": "(se aplica desde la próxima sesión)", "(errors: {n})": "(errores: {n})", "Global (every session)": "Global (cada sesión)", "(MCP: view-only)": "(MCP: solo lectura)", "skills": "skills", "{n} {kind} · {g} global · {l} loaded only where pinned": "{n} {kind} · {g} globales · {l} cargados solo donde están fijados", "All": "Todos", "Not global": "No globales", "Nowhere": "En ninguna parte", "Global": "Globales", "In projects": "En proyectos", "Drag onto a project, or click an item and then \"Pin\" on the project card. List: {n}": "Arrastra a un proyecto, o haz clic en un elemento y luego en «Fijar» en la tarjeta del proyecto. Lista: {n}", "No results": "Sin resultados", "Pin": "Fijar", "Local folder - not touched": "Carpeta local: no se toca", "Unpin": "Desfijar", "nothing pinned": "nada fijado", "{n} items": "{n} elementos", "Undone: {n}": "Deshecho: {n}", "Auto": "Auto", "Light": "Claro", "Dark": "Oscuro", "Documents": "Documentos", "Automation (n8n)": "Automatización (n8n)", "Video & media": "Vídeo y medios", "Marketing & SEO": "Marketing y SEO", "Design & UI": "Diseño y UI", "Development": "Desarrollo", "Agents & tools": "Agentes y herramientas", "Web & scraping": "Web y scraping", "Memory & agents": "Memoria y agentes", "Other": "Otros", "Scanning…": "Analizando…", "Manual exclusion of Gemini CLI tools (tools.exclude in {file}). Gemini keeps no tool-usage history, so nothing is suggested automatically. Tick what to exclude; takes effect after restarting Gemini.": "Exclusión manual de herramientas de Gemini CLI (tools.exclude en {file}). Gemini no guarda el historial de uso de herramientas, así que no se sugiere nada automáticamente. Marca lo que quieras excluir; se aplica al reiniciar Gemini.", "(core)": "(básica)", "Apply changes": "Aplicar cambios", "Refresh": "Actualizar", "No changes.": "Sin cambios.", "You are excluding a core tool (files/shell). Gemini may stop working properly. Continue?": "Vas a excluir una herramienta básica (archivos/shell). Gemini podría dejar de funcionar bien. ¿Continuar?", "APPLIED. Excluded: {a} · Re-enabled: {b}": "APLICADO. Excluidas: {a} · Reactivadas: {b}", "Takes effect after restarting Gemini CLI.": "Se aplica al reiniciar Gemini CLI.", "Done": "Hecho", "Last {d} days: {s} sessions. A toolset is a group of tools (blocked via hermes tools disable, platform cli). Possible saving: ~{n} tokens per request (size estimated: characters/4).": "Últimos {d} días: {s} sesiones. Un toolset es un grupo de herramientas (se bloquea con hermes tools disable, plataforma cli). Ahorro posible: ~{n} tokens por solicitud (tamaño estimado: caracteres/4).", "Already saved by blocking: ~{n} tokens.": "Ya ahorrado con el bloqueo: ~{n} tokens.", "tok": "tok", "{n} calls": "{n} llamadas", "blocked by us": "bloqueado por nosotros", "(from the next session)": "(desde la próxima sesión)", "to block": "para bloquear", "used/core/no data": "usado/básico/sin datos", "used/core": "usado/básico", "Preview": "Vista previa", "Block {n} unused": "Bloquear {n} sin uso", "Restore": "Restaurar", "Refresh scan": "Repetir análisis", "APPLIED": "APLICADO", "PREVIEW": "VISTA PREVIA", "(none)": "(ninguno)", "Skipped": "Omitidos", "Takes effect from the next Hermes session.": "Se aplica desde la próxima sesión de Hermes.", "Disable these toolsets in Hermes (hermes tools disable)? You can undo with Restore.": "¿Desactivar estos toolsets en Hermes (hermes tools disable)? Puedes deshacerlo con Restaurar.", "Built-in tools sent on every request (schemas) – blocking = deny in .claude/settings.local.json": "Herramientas integradas enviadas en cada solicitud (esquemas): bloquear = deny en .claude/settings.local.json", "Scanning transcripts (a few seconds)…": "Analizando transcripciones (unos segundos)…", "blocked": "bloqueado", "Last 30 days: {s} sessions, {r} requests. Possible saving from tools: ~{n} tokens per request. Pin skills in the Skills tab (more effective than name-only).": "Últimos 30 días: {s} sesiones, {r} solicitudes. Ahorro posible en herramientas: ~{n} tokens por solicitud. Fija skills en la pestaña Skills (es más eficaz que name-only).", "Scope": "Ámbito", "(locked)": "(bloqueado)", "(nothing to change)": "(nada que cambiar)", "Takes effect from the next session.": "Se aplica desde la próxima sesión.", "Done – from the next session": "Hecho: desde la próxima sesión", "Write deny to the settings of the chosen scope? You can undo with Restore.": "¿Escribir deny en la configuración del ámbito elegido? Puedes deshacerlo con Restaurar.", "Codex has no safe per-tool switch for built-in tools: its logs only expose tool namespaces (functions, clock, collaboration, MCP) and its options are broad feature flags. Manage Codex MCP servers in the MCP tab.": "Codex no tiene un interruptor seguro por herramienta para sus herramientas integradas: sus registros solo muestran espacios de nombres (functions, clock, collaboration, MCP) y sus opciones son feature flags generales. Gestiona los servidores MCP de Codex en la pestaña MCP.", "Hermes venv not found": "No se encontró el venv de Hermes", "reading files (core)": "leer archivos (básica)", "writing files (core)": "escribir archivos (básica)", "editing files (core)": "editar archivos (básica)", "running commands (core)": "ejecutar comandos (básica)", "find files by pattern": "buscar archivos por patrón", "search file contents": "buscar en el contenido de archivos", "list a folder": "listar una carpeta", "read several files at once": "leer varios archivos a la vez", "Google web search": "búsqueda web de Google", "fetch a URL": "descargar una URL", "task list": "lista de tareas", "load a skill": "cargar un skill", "ask you questions": "hacerte preguntas", "sub-agents": "subagentes", "plan mode": "modo plan", "task completion": "finalizar tareas", "topic updates": "actualizaciones de tema", "Gemini CLI docs": "documentación de Gemini CLI", "browser snapshot": "captura del navegador", "MCP resources": "recursos MCP", "task tracker": "seguimiento de tareas", "custom": "personalizada"}};
+let lang='en';try{lang=localStorage.getItem('sai_lang')||'en'}catch(e){}
+if(!['en','pl','es'].includes(lang))lang='en';
+const T=(k,v)=>{let r=((I18N[lang]||{})[k])||k;if(v)for(const x in v)r=r.split('{'+x+'}').join(v[x]);return r};
+try{sortMode=localStorage.getItem('sb_sort')||'az'}catch(e){}
+const SK_CATS=[
+ ['Documents',/\b(pdf|docx|pptx|xlsx|doc-coauthoring|slides|spreadsheet|word document)\b|^(pdf|docx|pptx|xlsx|doc)/i],
+ ['Automation (n8n)',/n8n|zapier|workflow-pattern/i],
+ ['Video & media',/video|remotion|hyperframes|motion|animat|reel|doodle|elevenlabs|audio|music|sound|caption|gif|thumbnail|stopmotion|lottie|gsap|threejs|image|media|voiceover|subtitle|ffmpeg|moviepy|vtk-|explainer|cinematic/i],
+ ['Marketing & SEO',/seo|marketing|\bads?\b|^ads|cro\b|copy|email|cold-|social|lead|pricing|launch|growth|keyword|content|brand-|analytics|ab-testing|referral|competitor|aso\b|paywall|popup|signup|onboarding|churn|influencer|public-relations|sales|prospect|attribution|offers|community|directory|link-prospecting|schema/i],
+ ['Design & UI',/design|figma|canvas|theme|algorithmic-art|frontend|ui\b|landing-report|css/i],
+ ['Development',/code|review|ship|qa\b|^qa|debug|investigate|test|deploy|git|api|mcp-builder|devex|wasp|stripe|plan-|autoplan|freeze|guard|careful|canary|benchmark|retro|merge|cso|security|health|setup-|land-|finn-|app-qa|papercuts|document-release|learn|webapp|reverse-engineer|node|typescript|python/i],
+ ['Agents & tools',/agent|browser|desktop|codex|memory|skill|context|gstack|gog|find-|loop|handoff|cli|obsidian|notebook|nlm|chrome|computer|office-hours|pair-agent|connect|karpathy|caveman|cavecrew|deslop|humanizer|oversized|autocli|update-config|superpowers/i]];
+const MCP_CATS=[
+ ['Web & scraping',/firecrawl|tavily|playwright|chrome|browser|puppeteer|fetch|scrape|crawl|search/i],
+ ['Memory & agents',/memory|brain|headroom|zenborg|mcm|agent|computer|desktop|obsidian|notebook|nlm|rea\b/i],
+ ['Development',/context7|container|task-master|github|git|docs|filesystem|n8n|node_repl|domain|linear/i],
+ ['Video & media',/higgsfield|vidmyo|elevenlabs|video|image|audio|media|texau|seo/i]];
+function catOf(it){const t=(it.name+' '+(it.desc||'')).slice(0,400);const rules=tab==='skills'?SK_CATS:MCP_CATS;
+  const byName=rules.find(([c,re])=>re.test(it.name));if(byName)return byName[0];
+  const byDesc=tab==='skills'?rules.find(([c,re])=>re.test(t)):null;return byDesc?byDesc[0]:'Other'}
+const catOrder=()=>[...(tab==='skills'?SK_CATS:MCP_CATS).map(r=>r[0]),'Other'];
+function grouped(list){if(sortMode!=='cat')return [[null,list]];const m={};list.forEach(it=>{(m[catOf(it)]=m[catOf(it)]||[]).push(it)});
+  return catOrder().filter(c=>m[c]).map(c=>[c,m[c]])}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(m,err){const t=$('#toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(toast.t);toast.t=setTimeout(()=>t.className='',err?4000:1800)}
+async function api(path,body){
+  const r=await fetch(path,{method:body?'POST':'GET',headers:{'X-SB':'1','Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+  const j=await r.json();if(!r.ok)throw new Error(j.error||r.status);return j}
+async function load(){S=await api('/api/state');render()}
+const items=()=>tab==='skills'?S.agents[agent].skills:S.agents[agent].mcps;
+const kind=()=>tab==='skills'?'skill':(agent==='gemini'?'gmcp':'mcp');
+const ro=()=>tab==='mcps'&&!S.agents[agent].writable;
+const isPinned=(it,scope)=>scope==='global'?it.global:it.projects[scope];
+async function toggle(name,scope,action){
+  if(ro()){toast(T('This agent is view-only (writing to its format is not supported yet)'),true);return}
+  try{await api('/api/'+kind(),{name,scope,action,agent});await load();toast(T(action==='pin'?'Pinned {n}':'Unpinned {n}',{n:name})+(tab==='mcps'?' '+T('(applies from the next session)'):''))}
+  catch(e){toast(e.message,true)}}
+let anchor=null;
+async function rangeApply(from,to,scope,action){
+  if(ro()){toast(T('This agent is view-only'),true);return}
+  const order=grouped(visible()).flatMap(([c,l])=>l),i=order.findIndex(x=>x.name===from),j=order.findIndex(x=>x.name===to);
+  if(i<0||j<0){anchor={n:to,s:scope};toggle(to,scope,action);return}
+  const want=action==='pin';let ok=0,fail=0;
+  for(const it of order.slice(Math.min(i,j),Math.max(i,j)+1)){
+    const p=isPinned(it,scope);if(p==='local'||!!p===want)continue;
+    try{await api('/api/'+kind(),{name:it.name,scope,action,agent});ok++}catch(e){fail++}}
+  anchor={n:to,s:scope};await load();
+  toast(T(want?'Pinned {n} items':'Unpinned {n} items',{n:ok})+(fail?' '+T('(errors: {n})',{n:fail}):'')+(tab==='mcps'?' '+T('(applies from the next session)'):''),!!fail)
+}
+const FILTERS=()=>[['all',T('All')],['nonglobal',T('Not global')],['unassigned',T('Nowhere')],['global',T('Global')],['project',T('In projects')]];
+function visible(){
+  return items().filter(it=>{
+    if(q&&!(it.name+' '+(it.desc||'')).toLowerCase().includes(q))return false;
+    const pc=Object.keys(it.projects).length;
+    if(filter==='unassigned')return !it.global&&!pc;
+    if(filter==='global')return !!it.global;
+    if(filter==='project')return pc>0;
+    if(filter==='nonglobal')return !it.global;
+    return true})}
+function scopes(){return [{path:'global',name:'🌐 '+T('Global (every session)'),locked:false},...S.projects]}
+function agentBar(){
+  const s=$('#ag');s.hidden=false;
+  s.innerHTML=Object.entries(S.agents).map(([k,v])=>`<option value="${k}" ${k===agent?'selected':''}>${esc(v.label)}${tab==='mcps'&&!v.writable?' '+T('(MCP: view-only)'):''}</option>`).join('')}
+let resetScroll=false;
+function render(){
+  // keep scroll position when the matrix/list is redrawn after a pin/unpin (otherwise the view jumps to the top)
+  const keep=resetScroll?null:{y:window.scrollY,mx:[(document.querySelector('.mx')||{}).scrollTop||0,(document.querySelector('.mx')||{}).scrollLeft||0],lib:(document.querySelector('#lib')||{}).scrollTop||0,libBox:(document.querySelector('.lib')||{}).scrollTop||0};
+  resetScroll=false;
+  render0();
+  if(keep){const m=document.querySelector('.mx');if(m){m.scrollTop=keep.mx[0];m.scrollLeft=keep.mx[1]}
+    const l=document.querySelector('.lib');if(l)l.scrollTop=keep.libBox;window.scrollTo(0,keep.y)}
+}
+function render0(){
+  agentBar();
+  const g=items().filter(i=>i.global).length;
+  $('#stat').textContent=T('{n} {kind} · {g} global · {l} loaded only where pinned',{n:items().length,kind:tab==='skills'?T('skills'):'MCP',g,l:items().length-g});
+  $('#undo').disabled=!S.lastChange;
+  $('#ag').style.display=tab==='tokens'?'none':'';
+  if(tab==='tokens'){tokensView();return}
+  view==='board'?board():matrix();
+}
+function board(){
+  const list=visible();
+  const f=FILTERS();
+  $('#main').innerHTML=`<div class="board"><div class="col" id="projs"></div>
+  <div class="card lib"><p class="hint">${T('Drag onto a project, or click an item and then "Pin" on the project card. List: {n}',{n:list.length})}</p>
+  <div class="filters">${f.map(([k,l])=>`<button data-f="${k}" class="${filter===k?'on':''}">${l}</button>`).join('')}</div>
+  <div id="lib">${grouped(list).map(([c,l])=>(c?`<div class="catH">${esc(T(c))} <span class="badge">${l.length}</span></div>`:'')+l.map(it=>{const pc=Object.keys(it.projects).length;return `<div class="item ${sel===it.name?'sel':''}" draggable="true" data-n="${esc(it.name)}"><div><div><span class="n">${esc(it.name)}</span>${it.global?'<span class="badge g">G</span>':''}${pc?`<span class="badge">P×${pc}</span>`:''}</div><div class="d">${esc(it.desc||it.kind||'')}</div></div></div>`}).join('')).join('')||'<div class="empty">'+T('No results')+'</div>'}</div></div></div>`;
+  $('#projs').innerHTML=scopes().map(sc=>{
+    const pinned=items().filter(it=>isPinned(it,sc.path));
+    return `<div class="card ${sc.locked?'locked':''}" data-p="${esc(sc.path)}"><h3>${esc(sc.name)} ${sc.locked?'🔒':''}<span class="badge">${pinned.length}</span>
+      ${sel&&!sc.locked&&!ro()&&!pinned.find(p=>p.name===sel)?`<button class="btn" style="margin-left:auto" data-pin="${esc(sc.path)}">＋ ${T('Pin')} ${esc(sel)}</button>`:''}</h3>
+      ${sc.path!=='global'?`<small>${esc(sc.path)} ${(sc.agents||[]).map(a=>`<span class="badge">${esc(a)}</span>`).join('')}</small>`:''}
+      <div class="chips">${pinned.map(p=>{const l=isPinned(p,sc.path)==='local';return `<span class="chip ${sc.path==='global'?'g':''} ${l?'local':''}" title="${l?T('Local folder - not touched'):esc(p.desc||'')}">${esc(p.name)}${l||sc.locked||ro()?'':`<button data-un="${esc(p.name)}" data-sc="${esc(sc.path)}" title="${T('Unpin')}">×</button>`}</span>`}).join('')||'<span class="empty">'+T('nothing pinned')+'</span>'}</div></div>`}).join('');
+  document.querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;render()});
+  document.querySelectorAll('.item').forEach(e=>{
+    e.onclick=()=>{sel=sel===e.dataset.n?null:e.dataset.n;render()};
+    e.ondragstart=ev=>{ev.dataTransfer.setData('text/plain',e.dataset.n);ev.dataTransfer.effectAllowed='copy'}});
+  document.querySelectorAll('[data-p]').forEach(c=>{
+    c.ondragover=ev=>{ev.preventDefault();c.classList.add('drop')};
+    c.ondragleave=()=>c.classList.remove('drop');
+    c.ondrop=ev=>{ev.preventDefault();c.classList.remove('drop');const n=ev.dataTransfer.getData('text/plain');if(n&&!c.classList.contains('locked'))toggle(n,c.dataset.p,'pin');else if(c.classList.contains('locked'))toast('Projekt zablokowany (produkcja)',true)}});
+  document.querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>toggle(sel,b.dataset.pin,'pin'));
+  document.querySelectorAll('[data-un]').forEach(b=>b.onclick=()=>toggle(b.dataset.un,b.dataset.sc,'unpin'));
+}
+function matrix(){
+  const sc=scopes(),list=visible();
+  $('#main').innerHTML=`<div class="filters" id="mf">${FILTERS().map(([k,l])=>`<button data-f="${k}" class="${filter===k?'on':''}">${l}</button>`).join('')}</div>
+  <div class="mx"><table><thead><tr><th class="name">${T('{n} items',{n:list.length})}</th>${sc.map(s=>`<th title="${esc(s.path)} ${(s.agents||[]).join(',')}"><span>${s.path==='global'?'🌐 GLOBAL':esc(s.name)}${s.locked?' 🔒':''}</span></th>`).join('')}</tr></thead><tbody>
+  ${grouped(list).map(([c,l])=>(c?`<tr class="catR"><td class="name" colspan="${sc.length+1}">${esc(T(c))} · ${l.length}</td></tr>`:'')+l.map(it=>`<tr><td class="name" title="${esc(it.desc||'')}">${esc(it.name)}</td>${sc.map(s=>{const p=isPinned(it,s.path);const cls=p?(p==='local'?'loc':(s.path==='global'?'on g':'on')):'';return `<td class="c"><button class="${cls}" ${s.locked||p==='local'||ro()?'disabled':''} data-n="${esc(it.name)}" data-s="${esc(s.path)}" data-a="${p?'unpin':'pin'}">${p?'●':'○'}</button></td>`}).join('')}</tr>`).join('')).join('')}</tbody></table></div>`;
+  document.querySelectorAll('#mf button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;render()});
+  // click = toggle; Shift+click in the same column = apply the same action to every row between the last click and this one
+  document.querySelectorAll('td.c button').forEach(b=>b.onclick=ev=>{
+    const n=b.dataset.n,s=b.dataset.s,a=b.dataset.a;
+    if(ev.shiftKey&&anchor&&anchor.s===s){rangeApply(anchor.n,n,s,a);return}
+    anchor={n,s};toggle(n,s,a)});
+  const tbl=document.querySelector('.mx table');let cur=-1;
+  const setCol=i=>{if(i===cur)return;tbl.querySelectorAll('.hc').forEach(e=>e.classList.remove('hc'));cur=i;if(i<0)return;
+    tbl.querySelectorAll('tr').forEach(r=>{const c=r.children[i];if(c)c.classList.add('hc')})};
+  tbl.addEventListener('mouseover',e=>{const c=e.target.closest('td.c,th');setCol(c&&!c.classList.contains('name')?[...c.parentNode.children].indexOf(c):-1)});
+  tbl.addEventListener('mouseleave',()=>setCol(-1));
+}
+$('#tabs').onclick=e=>{if(e.target.dataset.v){tab=e.target.dataset.v;sel=null;anchor=null;resetScroll=true;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b===e.target));render()}};
+$('#views').onclick=e=>{if(e.target.dataset.v){view=e.target.dataset.v;resetScroll=true;document.querySelectorAll('#views button').forEach(b=>b.classList.toggle('on',b===e.target));render()}};
+$('#ag').onchange=e=>{agent=e.target.value;sel=null;anchor=null;resetScroll=true;render()};
+$('#so').value=sortMode;$('#so').onchange=e=>{sortMode=e.target.value;try{localStorage.setItem('sb_sort',sortMode)}catch(x){}render()};
+$('#q').oninput=e=>{q=e.target.value.toLowerCase();render();e.target.focus()};
+$('#undo').onclick=async()=>{try{const r=await api('/api/undo',{});await load();toast(T('Undone: {n}',{n:r.undone}))}catch(e){toast(e.message,true)}};
+const THEMES=['auto','light','dark'],TL={auto:['◐','Auto'],light:['☀','Light'],dark:['☾','Dark']};
+let theme='auto';try{theme=localStorage.getItem('sb_theme')||'auto'}catch(e){}
+
+let TK=null;
+const TK_AGENTS=[['claude','Claude Code'],['hermes','Hermes'],['codex','Codex'],['gemini','Gemini']];
+const agPick=ag=>`<p>${T('Agent')}: <select id="tkag" class="btn">${TK_AGENTS.map(([k,l])=>`<option value="${k}" ${k===ag?'selected':''}>${l}</option>`).join('')}</select></p>`;
+const bindAg=()=>{const e=$('#tkag');if(e)e.onchange=()=>{window.tkAgent=e.value;TK=null;window.TKO=null;tokensView()}};
+async function otherTokens(ag){
+  $('#stat').textContent='';
+  if(!window.TKO){$('#main').innerHTML=agPick(ag)+'<p style="padding:16px">'+T('Scanning…')+'</p>';bindAg();
+    try{window.TKO=await api('/api/trim?agent='+ag)}catch(e){toast(e.message,1);return}}
+  const r=window.TKO;
+  if(r.unsupported||r.error){$('#main').innerHTML='<div style="padding:12px 16px;max-width:900px">'+agPick(ag)+'<p>'+esc(T(r.unsupported||r.error))+'</p></div>';bindAg();return}
+  if(r.manual){
+    $('#main').innerHTML=`<div style="padding:12px 16px;max-width:900px">${agPick(ag)}
+     <p>${T('Manual exclusion of Gemini CLI tools (tools.exclude in {file}). Gemini keeps no tool-usage history, so nothing is suggested automatically. Tick what to exclude; takes effect after restarting Gemini.',{file:esc(r.file)})}</p>
+     <table class="mx" style="width:100%">${r.rows.map(x=>`<tr><td><input type="checkbox" data-n="${esc(x.name)}" data-was="${x.excluded?1:0}" ${x.excluded?'checked':''}></td><td class="name">${esc(x.name)}${x.core?' <b>'+T('(core)')+'</b>':''}</td><td>${esc(T(x.hint))}</td></tr>`).join('')}</table>
+     <p style="margin-top:14px"><button class="btn" id="ga">${T('Apply changes')}</button> <button class="btn" id="gf">${T('Refresh')}</button></p><pre id="gout" style="white-space:pre-wrap"></pre></div>`;
+    bindAg();
+    $('#gf').onclick=async()=>{window.TKO=null;await otherTokens(ag)};
+    $('#ga').onclick=async()=>{
+      const bx=[...document.querySelectorAll('#main input[data-n]')];
+      const ex=bx.filter(b=>b.checked&&b.dataset.was==='0').map(b=>b.dataset.n), inc=bx.filter(b=>!b.checked&&b.dataset.was==='1').map(b=>b.dataset.n);
+      if(!ex.length&&!inc.length){$('#gout').textContent=T('No changes.');return}
+      if(ex.some(n=>(r.rows.find(x=>x.name===n)||{}).core)&&!confirm(T('You are excluding a core tool (files/shell). Gemini may stop working properly. Continue?')))return;
+      try{if(ex.length)await api('/api/trim',{agent:ag,action:'exclude',toolsets:ex,apply:true});
+          if(inc.length)await api('/api/trim',{agent:ag,action:'include',toolsets:inc,apply:true});
+          window.TKO=null;await otherTokens(ag);$('#gout').textContent=T('APPLIED. Excluded: {a} · Re-enabled: {b}',{a:ex.join(', ')||'-',b:inc.join(', ')||'-'})+'\n'+T('Takes effect after restarting Gemini CLI.');toast(T('Done'))}catch(e){toast(e.message,1)}};
+    return}
+  const cand=r.rows.filter(x=>x.trim&&!x.ours);
+  $('#main').innerHTML=`<div style="padding:12px 16px;max-width:900px">${agPick(ag)}
+   <p>${T('Last {d} days: {s} sessions. A toolset is a group of tools (blocked via hermes tools disable, platform cli). Possible saving: ~{n} tokens per request (size estimated: characters/4).',{d:r.days,s:r.sessions,n:r.saving})}${r.saved?' '+T('Already saved by blocking: ~{n} tokens.',{n:r.saved}):''}</p>
+   <table class="mx" style="width:100%">${r.rows.map(x=>`<tr><td class="name">${esc(x.name)}</td><td>~${x.tokens} ${T('tok')}</td><td>${T('{n} calls',{n:x.calls})}</td><td>${x.ours?'✅ <b>'+T('blocked by us')+'</b> '+T('(from the next session)'):x.trim?'<b>'+T('to block')+'</b>':T('used/core/no data')}</td></tr>`).join('')}</table>
+   <p style="margin-top:14px"><button class="btn" id="hp">${T('Preview')}</button> <button class="btn" id="ha">${T('Block {n} unused',{n:cand.length})}</button> <button class="btn" id="hr">${T('Restore')}</button> <button class="btn" id="hf">${T('Refresh scan')}</button></p>
+   <pre id="hout" style="white-space:pre-wrap"></pre></div>`;
+  bindAg();
+  const names=cand.map(x=>x.name);
+  const run=async(action,apply)=>{try{const o=await api('/api/trim',{agent:ag,action,toolsets:names,apply});
+      window.TKO=null;const m=(apply?T('APPLIED')+': ':T('PREVIEW')+': ')+(o.toolsets.join(', ')||T('(none)'))+(o.skipped&&o.skipped.length?'\n'+T('Skipped')+': '+o.skipped.join(', '):'')+(apply?'\n'+T('Takes effect from the next Hermes session.'):'');
+      if(apply){await otherTokens(ag);$('#hout').textContent=m;toast(T('Done'))}else $('#hout').textContent=m}catch(e){toast(e.message,1)}};
+  $('#hp').onclick=()=>run('trim',false);
+  $('#ha').onclick=()=>{if(confirm(T('Disable these toolsets in Hermes (hermes tools disable)? You can undo with Restore.')))run('trim',true)};
+  $('#hr').onclick=()=>run('restore',true);
+  $('#hf').onclick=async()=>{window.TKO=null;await otherTokens(ag)};
+}
+async function tokensView(){
+  if((window.tkAgent||'claude')!=='claude')return otherTokens(window.tkAgent);
+  $('#stat').textContent=T('Built-in tools sent on every request (schemas) – blocking = deny in .claude/settings.local.json');
+  if(!TK){$('#main').innerHTML='<p style="padding:16px">'+T('Scanning transcripts (a few seconds)…')+'</p>';
+    try{TK=await api('/api/trim')}catch(e){toast(e.message,1);return}}
+  const t=TK,cand=t.tools.filter(x=>x.trim);
+  const sc=[{path:'global',name:'🌐 '+T('Global (every session)'),locked:false},...S.projects];
+  const sel0=window.tkScope||'global';
+  const blockedIn=p=>new Set([...(t.scopes.global||{tools:[]}).tools,...((t.scopes[p]||{tools:[]}).tools)]);
+  const bl=blockedIn(sel0);
+  const row=x=>`<tr><td class="name">${esc(x.name)}</td><td>~${x.tokens} ${T('tok')}</td><td>${T('{n} calls',{n:x.calls})}</td><td>${bl.has(x.name)?'✅ <b>'+T('blocked')+'</b> '+T('(from the next session)'):x.trim?'<b>'+T('to block')+'</b>':T('used/core')}</td></tr>`;
+  const cand2=cand.filter(x=>!bl.has(x.name));
+  $('#main').innerHTML=`<div style="padding:12px 16px;max-width:900px">${agPick('claude')}
+   <p>${T('Last 30 days: {s} sessions, {r} requests. Possible saving from tools: ~{n} tokens per request. Pin skills in the Skills tab (more effective than name-only).',{s:t.sessions,r:t.requests,n:t.tool_saving})}</p>
+   <table class="mx" style="width:100%">${t.tools.map(row).join('')}</table>
+   <p style="margin-top:14px">${T('Scope')}: <select id="tks" class="btn">${sc.map(s=>`<option value="${esc(s.path)}" ${s.locked?'disabled':''} ${s.path===sel0?'selected':''}>${esc(s.name)}${s.locked?' '+T('(locked)'):''}</option>`).join('')}</select>
+   <button class="btn" id="tkp">${T('Preview')}</button> <button class="btn" id="tka">${T('Block {n} unused',{n:cand2.length})}</button> <button class="btn" id="tkr">${T('Restore')}</button> <button class="btn" id="tkf">${T('Refresh scan')}</button></p>
+   <pre id="tkout" style="white-space:pre-wrap"></pre></div>`;
+  const run=async(action,apply)=>{const scope=$('#tks').value;window.tkScope=scope;
+    try{const r=await api('/api/trim',{scope,action,apply});TK=await api('/api/trim');
+      const msg=(apply?T('APPLIED'):T('PREVIEW'))+' · '+r.file+'\n'+(r.tools.join(', ')||T('(nothing to change)'))+(apply?'\n'+T('Takes effect from the next session.'):'');
+      if(apply){toast(T('Done – from the next session'));await tokensView();$('#tkout').textContent=msg}else $('#tkout').textContent=msg}catch(e){toast(e.message,1)}};
+  bindAg();
+  $('#tks').onchange=()=>{window.tkScope=$('#tks').value;tokensView()};
+  $('#tkp').onclick=()=>run('trim',false);
+  $('#tka').onclick=()=>{if(confirm(T('Write deny to the settings of the chosen scope? You can undo with Restore.')))run('trim',true)};
+  $('#tkr').onclick=()=>run('restore',true);
+  $('#tkf').onclick=async()=>{TK=null;await tokensView()};
+}
+function applyTheme(){const r=document.documentElement;theme==='auto'?r.removeAttribute('data-theme'):r.setAttribute('data-theme',theme);$('#theme').textContent=TL[theme][0]+' '+T(TL[theme][1])}
+$('#theme').onclick=()=>{theme=THEMES[(THEMES.indexOf(theme)+1)%3];try{localStorage.setItem('sb_theme',theme)}catch(e){}applyTheme()};
+function applyLang(){document.documentElement.lang=lang;
+  document.querySelectorAll('[data-i18n]').forEach(e=>e.textContent=T(e.dataset.i18n));
+  document.querySelectorAll('[data-i18n-ph]').forEach(e=>e.placeholder=T(e.dataset.i18nPh));
+  document.querySelectorAll('[data-i18n-title]').forEach(e=>e.title=T(e.dataset.i18nTitle));
+  $('#lang').value=lang;applyTheme();if(S)render()}
+$('#lang').onchange=e=>{lang=e.target.value;try{localStorage.setItem('sai_lang',lang)}catch(x){}applyLang()};
+applyLang();
+load().catch(e=>toast(e.message,true));
+</script>
+</body>
+</html>
