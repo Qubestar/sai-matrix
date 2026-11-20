@@ -6,7 +6,11 @@ Every skill you install and every MCP server you configure costs tokens on every
 
 Pure Python standard library. No dependencies, no build step, no telemetry. Everything runs on `127.0.0.1`.
 
-![Sai Matrix, Tokens tab](docs/screenshot.png)
+![Sai Matrix, skills matrix](docs/screenshot.png)
+
+The Tokens tab shows which built-in tools your agent loads but never uses:
+
+![Sai Matrix, Tokens tab](docs/screenshot-tokens.png)
 
 Supports Claude Code, Codex, Gemini CLI, OpenCode, Hermes and Antigravity (skills for all of them; MCP editing for Claude Code and Gemini CLI, read-only view for the rest).
 
