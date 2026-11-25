@@ -16,7 +16,7 @@ The Tokens tab shows which built-in tools your agent loads but never uses:
 
 ![Sai Matrix, Tokens tab](docs/screenshot-tokens.png)
 
-Supports Claude Code, Codex, Gemini CLI, OpenCode, Hermes and Antigravity (skills for all of them; MCP editing for Claude Code and Gemini CLI, read-only view for the rest).
+Supports Claude Code, Codex, Gemini CLI, Hermes and Antigravity (skills for all of them; MCP editing for Claude Code and Gemini CLI, read-only view for the rest).
 
 ## Requirements
 
@@ -33,6 +33,16 @@ python3 server.py
 ```
 
 Open <http://127.0.0.1:8765>. On macOS you can double-click `sai-matrix.command` instead.
+
+### macOS app (DMG)
+
+Download `SaiMatrix-1.0.0-universal.dmg` (universal2: Apple silicon and Intel), open it and drag **Sai Matrix** to **Applications**. The app bundles its own Python, so no separate install is needed.
+
+First launch: open Sai Matrix from Applications. If macOS blocks it, use *System Settings → Privacy & Security → Open Anyway* (the build is signed and notarized). The app starts a local server on `127.0.0.1:8765` and opens it in your browser; a menu-bar icon stays until you choose **Quit Sai Matrix**.
+
+macOS may ask for permission when Sai Matrix reads agent folders for the first time: `~/.claude`, `~/.codex`, `~/.gemini`, `~/.agents` (and `~/.hermes` for the Tokens tab). Grant access so it can list your skills and MCP servers. Without it, those directories appear empty. All state lives in `~/Library/Application Support/Sai Matrix`; nothing is written inside the app bundle.
+
+To build the DMG yourself, see `scripts/build-dmg.sh` (requires Xcode command line tools and a Developer ID Application certificate; `--skip-sign` produces an unsigned local build).
 
 ## How it works
 
@@ -62,7 +72,9 @@ Changes apply from the agent's next session. Settings files are backed up once b
 
 ## Configuration
 
-Optional `config.json` next to `server.py` (see `config.example.json`):
+Optional `config.json` in the data directory (default `.data/` next to `server.py`; see `config.example.json`):
+
+The data directory holds the journal, token-trim records and an optional `config.json`. Use `--data-dir <path>` or `SAI_MATRIX_DATA=<path>` to move it (the bundled app uses `~/Library/Application Support/Sai Matrix`); `python3 server.py` keeps using `./.data`.
 
 ```json
 {
