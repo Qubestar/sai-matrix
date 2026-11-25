@@ -32,13 +32,13 @@ cd sai-matrix
 python3 server.py
 ```
 
-Open <http://127.0.0.1:8765>. On macOS you can double-click `sai-matrix.command` instead.
+Open <http://127.0.0.1:8767>. On macOS you can double-click `sai-matrix.command` instead.
 
 ### macOS app (DMG)
 
 Download `SaiMatrix-1.0.0-universal.dmg` (universal2: Apple silicon and Intel), open it and drag **Sai Matrix** to **Applications**. The app bundles its own Python, so no separate install is needed.
 
-First launch: open Sai Matrix from Applications. If macOS blocks it, use *System Settings → Privacy & Security → Open Anyway* (the build is signed and notarized). The app starts a local server on `127.0.0.1:8765` and opens it in your browser; a menu-bar icon stays until you choose **Quit Sai Matrix**.
+First launch: open Sai Matrix from Applications. If macOS blocks it, use *System Settings → Privacy & Security → Open Anyway* (the build is signed and notarized). The app starts a local server on `127.0.0.1:8767` and opens it in your browser; a menu-bar icon stays until you choose **Quit Sai Matrix**.
 
 macOS may ask for permission when Sai Matrix reads agent folders for the first time: `~/.claude`, `~/.codex`, `~/.gemini`, `~/.agents` (and `~/.hermes` for the Tokens tab). Grant access so it can list your skills and MCP servers. Without it, those directories appear empty. All state lives in `~/Library/Application Support/Sai Matrix`; nothing is written inside the app bundle.
 

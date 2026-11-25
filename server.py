@@ -43,7 +43,7 @@ DATA = (Path(os.environ["SAI_MATRIX_DATA"]).expanduser().resolve()
         if os.environ.get("SAI_MATRIX_DATA") else HERE / ".data")
 DATA.mkdir(parents=True, exist_ok=True)   # local state (journal), never published
 LOG = DATA / "changes.jsonl"
-PORT = int(os.environ.get("SAI_MATRIX_PORT") or 8765)
+PORT = int(os.environ.get("SAI_MATRIX_PORT") or 8767)
 INDEX_SKILL = "skill-index"
 # Projects the tool may only read, never write to (production checkouts).
 def _cfg():
