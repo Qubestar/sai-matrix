@@ -253,7 +253,7 @@ main() {
         xcrun stapler validate "$DMG"
         spctl -a -vvv -t install "$DMG"
     fi
-    shasum -a 256 "$DMG" | tee "$DMG.sha256"
+    (cd "$DIST" && shasum -a 256 "$(basename "$DMG")") | tee "$DMG.sha256"
     say "Done: $DMG"
 }
 

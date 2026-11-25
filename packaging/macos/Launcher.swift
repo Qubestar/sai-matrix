@@ -3,8 +3,8 @@
 import Cocoa
 import Foundation
 
-let port: UInt16 = 8765
-let appURL = URL(string: "http://127.0.0.1:8765")!
+let port: UInt16 = ProcessInfo.processInfo.environment["SAI_MATRIX_PORT"].flatMap(UInt16.init) ?? 8765
+let appURL = URL(string: "http://127.0.0.1:\(port)")!
 let stateURL = appURL.appendingPathComponent("api/state")
 
 func portIsOpen() -> Bool {
