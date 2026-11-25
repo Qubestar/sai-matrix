@@ -149,6 +149,19 @@ class ServerTests(unittest.TestCase):
             urllib.request.urlopen(req, timeout=5)
         self.assertEqual(ctx.exception.code, 403)
 
+    def test_config_read_from_data_dir(self):
+        (self.data / "config.json").write_text(json.dumps({"locked": ["/tmp/locked-proj"]}))
+        env = {k: v for k, v in os.environ.items() if not k.startswith("SAI_MATRIX")}
+        env["HOME"] = str(self.home)
+        env["SAI_MATRIX_DATA"] = str(self.data)
+        code = ("import server, json; print(json.dumps({'cfg': server._cfg(), 'data': str(server.DATA)}))")
+        out = subprocess.run([sys.executable, "-c", code], cwd=str(ROOT), env=env,
+                             capture_output=True, text=True, timeout=30)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        got = json.loads(out.stdout)
+        self.assertEqual(got["cfg"]["locked"], ["/tmp/locked-proj"])
+        self.assertEqual(got["data"], str(self.data.resolve()))
+
     def test_opencode_removed_from_state(self):
         _, state = self.srv.get("/api/state")
         self.assertNotIn("opencode", state["agents"])
