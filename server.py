@@ -24,15 +24,34 @@ GLOBAL = HOME / ".claude" / "skills"
 CLAUDE_JSON = HOME / ".claude.json"
 MCP_LIB = HOME / ".claude" / "mcp-library.json"
 HERE = Path(__file__).resolve().parent
-DATA = HERE / ".data"            # local state (journal), never published
-DATA.mkdir(exist_ok=True)
+
+
+def _split_data_arg(argv):
+    for i, a in enumerate(argv):
+        if a == "--data-dir" and i + 1 < len(argv):
+            return argv[i + 1]
+        if a.startswith("--data-dir="):
+            return a.split("=", 1)[1]
+    return None
+
+
+_DATA_ARG = _split_data_arg(sys.argv[1:])
+if _DATA_ARG:
+    # token_trim.py reads the same env var, so the in-process import uses one dir.
+    os.environ["SAI_MATRIX_DATA"] = str(Path(_DATA_ARG).expanduser().resolve())
+DATA = (Path(os.environ["SAI_MATRIX_DATA"]).expanduser().resolve()
+        if os.environ.get("SAI_MATRIX_DATA") else HERE / ".data")
+DATA.mkdir(parents=True, exist_ok=True)   # local state (journal), never published
 LOG = DATA / "changes.jsonl"
-PORT = 8765
+PORT = int(os.environ.get("SAI_MATRIX_PORT") or 8767)
 INDEX_SKILL = "skill-index"
 # Projects the tool may only read, never write to (production checkouts).
 def _cfg():
+    p = DATA / "config.json"
+    if not p.is_file():
+        p = HERE / "config.json"
     try:
-        return json.loads((HERE / "config.json").read_text())
+        return json.loads(p.read_text())
     except (OSError, ValueError):
         return {}
 
@@ -53,7 +72,6 @@ SKILL_DIRS = {
     "antigravity": (".gemini/config/skills", ".agents/skills"),
     "codex": (".codex/skills", ".agents/skills"),
     "gemini": (".gemini/skills", ".gemini/skills"),
-    "opencode": (".config/opencode/skills", ".opencode/skills"),
     "hermes": (".hermes/skills", ".hermes/skills"),
 }
 
@@ -131,7 +149,7 @@ def projects():
     for path in codex_cfg().get("projects", {}):
         known.setdefault(path, set()).add("codex")
     # also pick up project folders no agent registered yet (e.g. only used from Antigravity): scan siblings of known projects
-    MARKERS = (".git", ".claude", ".agents", ".gemini", ".codex", ".opencode", "CLAUDE.md", "AGENTS.md", "GEMINI.md")
+    MARKERS = (".git", ".claude", ".agents", ".gemini", ".codex", "CLAUDE.md", "AGENTS.md", "GEMINI.md")
     roots = {str(Path(p).parent) for p in known if Path(p).parent != HOME}
     for r in roots:
         try:
@@ -146,7 +164,7 @@ def projects():
             continue
         if not Path(path).is_dir():
             continue
-        for a, marker in (("gemini", ".gemini"), ("antigravity", ".agents"), ("opencode", "opencode.json"), ("hermes", ".hermes")):
+        for a, marker in (("gemini", ".gemini"), ("antigravity", ".agents"), ("hermes", ".hermes")):
             if (Path(path) / marker).exists():
                 ags.add(a)
         out.append({"path": path, "name": Path(path).name.strip(), "locked": path in LOCKED, "agents": sorted(ags)})
@@ -369,7 +387,6 @@ AGENTS = {
     "antigravity": {"label": "Antigravity", "writable": False, "detect": str(HOME / ".gemini" / "antigravity")},
     "gemini": {"label": "Gemini CLI", "writable": True},
     "codex": {"label": "Codex", "writable": False},
-    "opencode": {"label": "OpenCode", "writable": False},
     "hermes": {"label": "Hermes", "writable": False},
     # Nod (dev.nod.desktop): keeps its own data in ~/.nod-desktop (created on first launch); no shared skill/MCP dir known yet
     "nod": {"label": "Nod (/Applications/Nod.app)", "writable": False, "detect": "/Applications/Nod.app"},
@@ -407,8 +424,6 @@ def agent_global_names(agent):
         return set(_json(GEMINI_GLOBAL).get("mcpServers", {}))
     if agent == "codex":
         return set(codex_cfg().get("mcp_servers", {}))
-    if agent == "opencode":
-        return set(_json(HOME / ".config/opencode/opencode.json").get("mcp", {}))
     if agent == "hermes":
         return set(hermes_names())
     return set(load_claude_json().get("mcpServers", {}))
@@ -420,8 +435,6 @@ def agent_project_names(agent, path):
         return set(project_mcp(path))
     if agent == "gemini":
         return set(_json(p / ".gemini" / "settings.json").get("mcpServers", {}))
-    if agent == "opencode":
-        return set(_json(p / "opencode.json").get("mcp", {}))
     if agent == "codex":
         try:
             import tomllib
@@ -494,7 +507,7 @@ def state():
     last = [e for e in read_log() if e.get("kind") != "undo"][-1:] or None
     agents = {}
     for aid, meta in AGENTS.items():
-        g = agent_global_names(aid) if aid in ("claude", "gemini", "codex", "opencode", "hermes") else set()
+        g = agent_global_names(aid) if aid in ("claude", "gemini", "codex", "hermes") else set()
         pn = {p["path"]: agent_project_names(aid, p["path"]) for p in projs}
         names = sorted(set(ml) | g | set().union(*pn.values()) if pn else set(ml) | g)
         sk = []
